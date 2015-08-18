@@ -21,4 +21,4 @@ Wordpress
  - Or using wss' library `WSSDB.class.php`.
  
 #Building XML file
- - using wss' library `WSSXMLMapping.class.php`.
+ - Using wss' library `WSSXMLMapping.class.php`.

@@ -12,11 +12,18 @@ Setup the path
  - Or something like: `http://example.com/wss-datafeed`.
  - In that executable PHP file we will do the next steps below.
 
-Connect to database
+Connect to DB and retrieve products from DB
 -------------------
  - Using your own library.
- - Or using wss' library:
-
+ - Or using wss' library `WSSDB.class.php`.
  
+Building XML file
+-----------------
+ - using wss' library `WSSXMLMapping.class.php`.
+
 # Wordpress
----------
+
+Setup the path
+--------------
+ - Path from root: `http://example.com/wss/datafeed.php`. (Need to include `wp_load.php`)
+ - Or using page template: `http://example.com/wss-datafeed`.

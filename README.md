@@ -16,7 +16,7 @@ Wordpress
  - Path from root: `http://example.com/wss/datafeed.php`. (Need to include `wp_load.php`)
  - Or using page template: `http://example.com/wss-datafeed`.
 
-#Connect to DB and retrieve products from DB
+#Connect to DB & retrieve products from DB
  - Using your own library.
  - Or using wss' library `WSSDB.class.php`.
  

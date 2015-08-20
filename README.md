@@ -26,4 +26,4 @@ Wordpress
 #Wordpress Plugin
 
  - Download and copy to `/wp-content/plugins/`.
- - Fill information step by step.
+ - Fill information step by step in Settings page.

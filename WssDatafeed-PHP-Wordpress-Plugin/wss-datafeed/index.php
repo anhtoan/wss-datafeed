@@ -6,6 +6,7 @@
     Author: ToanNguyen
     Version: 1.0
     Author URI: http://anhtoan.info
+    Date Modified: 20/08/2015
     */
 ?>
 <?php

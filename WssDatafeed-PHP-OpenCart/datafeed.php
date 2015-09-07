@@ -8,17 +8,13 @@ error_reporting(E_ALL);
 require "WSSDB.class.php";
 require "WSSXMLMapping.class.php";
 
-// Database 
-/*$db = new DB(DB_DRIVER, DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_DATABASE);
-$registry->set('db', $db);*/
+if (file_exists('config.php')) {
+	require_once('config.php');
+}
 
 if (file_exists('../config.php')) {
 	require_once('../config.php');
-}  
-
-// VirtualQMOD
-require_once('../vqmod/vqmod.php');
-VQMod::bootup();
+} 
 
 $db = new WSSDB(array(
 	'host' => DB_HOSTNAME,
@@ -30,91 +26,82 @@ $db = new WSSDB(array(
 
 $products = $db->fetch_table_array("
 	SELECT
-		oc_product.product_id,
-		oc_product.model,
-		oc_product.quantity,
-		oc_product.stock_status_id,
-		oc_product.image,
-		oc_product.manufacturer_id,
-		oc_product.price,
+		".DB_PREFIX."product.product_id,
+		".DB_PREFIX."product.model,
+		".DB_PREFIX."product.quantity,
+		".DB_PREFIX."product.stock_status_id,
+		".DB_PREFIX."product.image,
+		".DB_PREFIX."product.manufacturer_id,
+		".DB_PREFIX."product.price,
 
-		oc_product_description.name as product_name,
-		oc_product_description.description,
+		".DB_PREFIX."product_special.price as discounted_price,
+		".DB_PREFIX."product_special.date_start,
+		".DB_PREFIX."product_special.date_end,
 
-		oc_manufacturer.name as brand_name
+		".DB_PREFIX."product_description.name as product_name,
+		".DB_PREFIX."product_description.description,
 
-		
-	FROM oc_product
+		".DB_PREFIX."product_to_category.category_id,
 
-	LEFT JOIN oc_product_description ON oc_product.product_id = oc_product_description.product_id
-	LEFT JOIN oc_manufacturer ON oc_manufacturer.manufacturer_id = oc_product.manufacturer_id
+		".DB_PREFIX."manufacturer.name as brand_name
+
+	FROM ".DB_PREFIX."product
+
+	LEFT JOIN ".DB_PREFIX."product_special ON ".DB_PREFIX."product.product_id = ".DB_PREFIX."product_special.product_id
+	LEFT JOIN ".DB_PREFIX."product_description ON ".DB_PREFIX."product.product_id = ".DB_PREFIX."product_description.product_id
+	LEFT JOIN ".DB_PREFIX."product_to_category ON ".DB_PREFIX."product.product_id = ".DB_PREFIX."product_to_category.product_id
+	LEFT JOIN ".DB_PREFIX."manufacturer ON ".DB_PREFIX."manufacturer.manufacturer_id = ".DB_PREFIX."product.manufacturer_id
 
 	
-", 'product_id');//oc_product_description.description //LIMIT 0, 10
+", 'product_id');//".DB_PREFIX."product_description.description //LIMIT 0, 10
 
-
+//print_r($products); exit;
 
 foreach($products as $p){
 
 	$product_id = $p['product_id'];
 
 	$p['sku'] = $p['model'];
-	//$p['url'] = 'http://ghettre.com/'.WSSXMLMapping::remove_accents($p['product_name'], '-');
 	$p['description'] =  WSSXMLMapping::aj_sub_string($p['description'], 250, false);
 	$p['availability_instock'] = $p['stock_status_id'] == 7 ? true : false;
 	$p['brand'] = $p['brand_name'];
-	$p['category'] = $p['brand_name'];
-	$p['price'] = WSSXMLMapping::currency($p['price']);
-	$p['discount'] = 0;
-	$p['discounted_price'] = $p['price'];
-	$p['picture_url'] = 'http://ghettre.com/image/'.$p['image'];
 
-	$tmp = $db->query_first("
-		SELECT
-			*
+	$sql['category'] = $db->query_first("SELECT * FROM ".DB_PREFIX."category_description WHERE category_id = '".$p['category_id']."'");
+	$p['category'] = $sql['category']['name'];
 
-		FROM oc_url_alias
-		WHERE query = 'product_id=".$product_id."'
-	");
+	$sql['category_parent_1_id'] = $db->query_first("SELECT * FROM ".DB_PREFIX."category WHERE category_id = '".$p['category_id']."'");
+	$sql['category_parent_1'] = $db->query_first("SELECT * FROM ".DB_PREFIX."category_description WHERE category_id = '".$sql['category_parent_1_id']['parent_id']."'");
+	$p['category_parent_1'] = $sql['category_parent_1']['name'];
 
-	$p['url'] = 'http://ghettre.com/'.$tmp['keyword'];
+	$p['price_currency'] = WSSXMLMapping::currency((int)$p['price']);
 
-	/*$p['categories'] = $db->fetch_table_array("
-		SELECT
-			oc_category.category_id,
-			oc_category_description.name,
-			oc_category.parent_id
-
-		FROM oc_product_to_category
-
-		INNER JOIN oc_category ON (oc_product_to_category.category_id = oc_category.category_id AND oc_category.parent_id > 0)
-		LEFT JOIN oc_category_description ON oc_category_description.category_id = oc_category.category_id
-
-		WHERE oc_product_to_category.product_id = ".$product_id."
-
-	", 'category_id');*/
-	
-	//print_r($p); exit;
-	
-	/*
-	if($p['categories']){
-		foreach($p['categories'] as $p_cat){
-			$p['category_child'] = $db->fetch_table_array("
-				SELECT
-					oc_category.category_id,
-					oc_category_description.name,
-					oc_category.parent_id
-
-				FROM oc_category
-				LEFT JOIN oc_category_description ON oc_category_description.category_id = oc_category.category_id
-
-				WHERE oc_category.parent_id = ".$p_cat['category_id']."
-
-			", 'category_id');
+	if ($p['discounted_price'] > 0) {
+		$date_now = date("Y-m-d");
+		if (($p['date_start'] == 0 && $p['date_end'] == 0) || ($p['date_start'] < $date_now && $date_now < $p['date_end']) || ($p['date_start'] < $date_now && $p['date_end'] == 0) || ($p['date_start'] == 0 && $date_now < $p['date_end'])) {
+			$p['discounted_price_currency'] = WSSXMLMapping::currency((int)$p['discounted_price']);
+		} else {
+			$p['discounted_price_currency'] = $p['price'];
 		}
-	}*/
+		// if ($p['date_start'] > $date_now || $p['date_end'] < $date_now) {
+		// 	$p['discounted_price'] = $p['price'];
+		// } else {
+		// 	$p['discounted_price'] = WSSXMLMapping::currency((int)$p['discounted_price']);
+		// }
+		$p['discount_currency'] = WSSXMLMapping::currency((int)$p['price'] - (int)$p['discounted_price']);
+	} else {
+		$p['discounted_price_currency'] = WSSXMLMapping::currency((int)$p['price']);
+		$p['discount_currency'] = 0;
+	}
 
-	
+	$p['picture_url'] = HTTP_SERVER.'image/'.$p['image'];
+
+	$tmp = $db->query_first("SELECT * FROM ".DB_PREFIX."url_alias WHERE query = 'product_id=".$product_id."'");
+
+	if (empty($tmp['keyword'])) {
+		$p['url'] = HTTP_SERVER.'index.php?route=product/product&product_id='.$p['product_id'];
+	} else {
+		$p['url'] = HTTP_SERVER.$tmp['keyword'];
+	}
 
 	$data[$product_id] = array(
 		//SKU sản phẩm
@@ -132,15 +119,15 @@ foreach($products as $p){
 		//Mệnh giá tiền sử dụng VND/USD				
 		'currency' => 'VND',
 		//Giá sản phẩm khi chưa khuyến mãi (format US currency -> xx,xxx,xxx.xx) 											
-		'price' => $p['price'],
+		'price' => $p['price_currency'],
 		//Số tiền khuyến mãi (format US currency -> xx,xxx,xxx.xx)								
-		'discount' => $p['discount'],
+		'discount' => $p['discount_currency'],
 		//Giá sau khi khuyến mãi (nếu không có khuyến mãi thì để bằng giá ban đầu, hoặc không điền (format US currency -> xx,xxx,xxx.xx) 												
-		'discounted_price' => $p['discounted_price'],
+		'discounted_price' => $p['discounted_price_currency'],
 		//Category1 cha của cha	
 		'parent_of_parent_of_cat1' => '', 
 		//Category1 cha	
-		'parent_of_cat_1' => '',
+		'parent_of_cat_1' => $p['category_parent_1'],
 		//Category1 sản phẩm 
 		'category_1' => $p['category'],
 		//Category2 cha của cha (nếu có)								
@@ -156,7 +143,7 @@ foreach($products as $p){
 		//Category3 sản phẩm (nếu có)
 		'category_3' => '',
 		//Ảnh sản phẩm (Ảnh đại diện)
-		'picture_url' => $p['picture_url'],//$tmp['picture_url'] ? 'http://quatructuyen.com/wp-content/themes/organic_shop/timthumb.php?src='.$tmp['picture_url'] : '', 											//Ảnh sản phẩm 1
+		'picture_url' => $p['picture_url'],
 		//Ảnh sản phẩm 2
 		'picture_url2' => isset($tmp['picture_url2']) ? $tmp['picture_url2'] : '', 	
 		//Ảnh sản phẩm 3
@@ -179,4 +166,3 @@ foreach($products as $p){
 /* Exporting XML */
 WSSXMLMapping::setData($data);
 WSSXMLMapping::display();
-

@@ -22,3 +22,8 @@ Wordpress
  
 #Building XML file
  - Using wss' library `WSSXMLMapping.class.php`.
+
+#Wordpress Plugin
+
+ - Download and copy to `/wp-content/plugins/`.
+ - Fill information step by step in Settings page.

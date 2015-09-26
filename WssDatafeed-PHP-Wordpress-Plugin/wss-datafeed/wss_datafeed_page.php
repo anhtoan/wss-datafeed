@@ -3,7 +3,7 @@ require plugin_dir_path( __FILE__ )."library/WSSXMLMapping.class.php";
 
 $wss_options_post_type = get_option('wss_options_post_type', '');
 $wss_attributes = get_option('wss_options_attributes', array());
-//print_r($wss_attributes);
+//print_r($wss_attributes); exit;
 
 if(!$wss_options_post_type){
 	exit;
@@ -55,10 +55,50 @@ foreach($posts_array as $p)
 
 			if(isset($v['taxonomy']) && $v['taxonomy'])
 			{
-				$terms = get_the_terms( $post_id, $v['taxonomy']);
+				$terms = wp_get_post_terms( $post_id, $v['taxonomy']);
+				//print_r($terms); exit;
 				if($terms){
-					$first_term = reset($terms);
-					$tmp[$k] = $first_term->name;
+					foreach ($terms as $term) {
+						if ($term->parent == 0) {
+							$term_0 = $term;
+						}
+					}
+
+					foreach ($terms as $term) {
+						if ($term->parent == $term_0->term_id) {
+							$term_1 = $term;
+						}
+					}
+
+					if ($term_1) {
+						foreach ($terms as $term) {
+							if ($term->parent == $term_1->term_id) {
+								$term_2 = $term;
+							}
+						}
+					}
+
+					$j = count($terms);
+
+					switch ($j) {
+						case 1:
+							$tmp[$k]['category_1'] = $term_0->name;
+							break;
+						case 2:
+							$tmp[$k]['category_1_parent'] = $term_0->name;
+							$tmp[$k]['category_1'] = $term_1->name;
+							break;
+						case 3:
+							$tmp[$k]['category_1_parent_parent'] = $term_0->name;
+							$tmp[$k]['category_1_parent'] = $term_1->name;
+							$tmp[$k]['category_1'] = $term_2->name;
+							break;
+						default:
+							$tmp[$k]['category_1_parent_parent'] = $term_0->name;
+							$tmp[$k]['category_1_parent'] = $term_1->name;
+							$tmp[$k]['category_1'] = $term_2->name;
+							break;
+					}
 				}
 			}
 		}
@@ -76,7 +116,7 @@ foreach($posts_array as $p)
 		//Tên sản phẩm						
 		'product_name' => isset($tmp['product_name']) ? $tmp['product_name'] : '',
 		//Mô tả sản phẩm							
-		'description' => isset($tmp['description']) ? WSSXMLMapping::aj_sub_string($tmp['description'], 250, false) : '',
+		'description' => isset($tmp['description']) ? WSSXMLMapping::aj_sub_string(preg_replace('/[\x00-\x1F\xFF]/', '', $tmp['description']), 250, false) : '',
 		//Mệnh giá tiền sử dụng VND/USD				
 		'currency' => isset($tmp['currency']) ? $tmp['currency'] : 'VND',
 		//Giá sản phẩm khi chưa khuyến mãi (format US currency -> xx,xxx,xxx.xx) 											
@@ -86,11 +126,11 @@ foreach($posts_array as $p)
 		//Giá sau khi khuyến mãi (nếu không có khuyến mãi thì để bằng giá ban đầu, hoặc không điền (format US currency -> xx,xxx,xxx.xx) 												
 		'discounted_price' => isset($tmp['discounted_price']) ? WSSXMLMapping::currency($tmp['discounted_price']) : 0,
 		//Category1 cha của cha	
-		'parent_of_parent_of_cat1' => isset($tmp['category_parent_parent']) ? $tmp['category_parent_parent'] : '',
+		'parent_of_parent_of_cat1' => isset($tmp['category']['category_1_parent_parent']) ? $tmp['category']['category_1_parent_parent'] : '',
 		//Category1 cha	
-		'parent_of_cat_1' => isset($tmp['category_parent']) ? $tmp['category_parent'] : '',
+		'parent_of_cat_1' => isset($tmp['category']['category_1_parent']) ? $tmp['category']['category_1_parent'] : '',
 		//Category1 sản phẩm 
-		'category_1' => isset($tmp['category']) ? $tmp['category'] : '',
+		'category_1' => isset($tmp['category']['category_1']) ? $tmp['category']['category_1'] : '',
 		//Category2 cha của cha (nếu có)								
 		'parent_of_parent_of_cat2' => isset($tmp['category_parent_parent2']) ? $tmp['category_parent_parent2'] : '',
 		//Category2 cha (nếu có)			

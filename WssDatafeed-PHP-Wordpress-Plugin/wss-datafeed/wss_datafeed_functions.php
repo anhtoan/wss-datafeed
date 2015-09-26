@@ -65,6 +65,7 @@ function wss_create_datafeed_page($slug='wss-datafeed'){
     {
         $_p = array();
         $_p['post_title'] = $the_page_title;
+        $_p['post_name'] = $slug;
         $_p['post_content'] = "Websosanh.vn's Datafeed Page.";
         $_p['post_status'] = 'publish';
         $_p['post_type'] = 'page';

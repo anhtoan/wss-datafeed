@@ -1,0 +1,5 @@
+D:\Wss\XmlDataFeed\WssDataFeed\bin\Release\WssDataFeed.dll
+D:\Wss\XmlDataFeed\WssDataFeed\bin\Release\WssDataFeed.pdb
+D:\Wss\XmlDataFeed\WssDataFeed\obj\Release\WssDataFeed.csprojResolveAssemblyReference.cache
+D:\Wss\XmlDataFeed\WssDataFeed\obj\Release\WssDataFeed.dll
+D:\Wss\XmlDataFeed\WssDataFeed\obj\Release\WssDataFeed.pdb

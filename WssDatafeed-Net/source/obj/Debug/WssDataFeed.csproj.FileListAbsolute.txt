@@ -1,0 +1,5 @@
+D:\Wss\XmlDataFeed\WssDataFeed\obj\Debug\WssDataFeed.csprojResolveAssemblyReference.cache
+D:\Wss\XmlDataFeed\WssDataFeed\bin\Debug\WssDataFeed.dll
+D:\Wss\XmlDataFeed\WssDataFeed\bin\Debug\WssDataFeed.pdb
+D:\Wss\XmlDataFeed\WssDataFeed\obj\Debug\WssDataFeed.dll
+D:\Wss\XmlDataFeed\WssDataFeed\obj\Debug\WssDataFeed.pdb

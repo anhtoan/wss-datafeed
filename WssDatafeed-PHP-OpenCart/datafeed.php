@@ -24,6 +24,7 @@ $db = new WSSDB(array(
 	'dbName' => DB_DATABASE
 ));
 
+//get all products from db
 $products = $db->fetch_table_array("
 	SELECT
 		".DB_PREFIX."product.product_id,
@@ -53,19 +54,41 @@ $products = $db->fetch_table_array("
 	LEFT JOIN ".DB_PREFIX."manufacturer ON ".DB_PREFIX."manufacturer.manufacturer_id = ".DB_PREFIX."product.manufacturer_id
 
 	
-", 'product_id');//".DB_PREFIX."product_description.description //LIMIT 0, 10
-
-//print_r($products); exit;
+", 'product_id');
 
 foreach($products as $p){
 
 	$product_id = $p['product_id'];
 
+	//sku
 	$p['sku'] = $p['model'];
+
+	//description
 	$p['description'] =  WSSXMLMapping::aj_sub_string($p['description'], 250, false);
-	$p['availability_instock'] = $p['stock_status_id'] == 7 ? true : false;
+
+	//availability_instock
+	switch ($p['stock_status_id']) {
+		case 7:
+			$p['availability_instock'] = '1';//Còn hàng
+			break;
+		case 8:
+			$p['availability_instock'] = '2';//Liên hệ
+			break;
+		case 5:
+			$p['availability_instock'] = '0';//Hết hàng
+			break;
+		case 6:
+			$p['availability_instock'] = '2';//Liên hệ
+			break;
+		default:
+			$p['availability_instock'] = '1';//Còn hàng
+			break;
+	}
+
+	//brand
 	$p['brand'] = $p['brand_name'];
 
+	//category
 	$sql['category'] = $db->query_first("SELECT * FROM ".DB_PREFIX."category_description WHERE category_id = '".$p['category_id']."'");
 	$p['category'] = $sql['category']['name'];
 
@@ -73,43 +96,51 @@ foreach($products as $p){
 	$sql['category_parent_1'] = $db->query_first("SELECT * FROM ".DB_PREFIX."category_description WHERE category_id = '".$sql['category_parent_1_id']['parent_id']."'");
 	$p['category_parent_1'] = $sql['category_parent_1']['name'];
 
+	//currency, price, discounted price
 	$p['price_currency'] = WSSXMLMapping::currency((int)$p['price']);
 
 	if ($p['discounted_price'] > 0) {
+		date_default_timezone_get('UTC');
 		$date_now = date("Y-m-d");
 		if (($p['date_start'] == 0 && $p['date_end'] == 0) || ($p['date_start'] < $date_now && $date_now < $p['date_end']) || ($p['date_start'] < $date_now && $p['date_end'] == 0) || ($p['date_start'] == 0 && $date_now < $p['date_end'])) {
 			$p['discounted_price_currency'] = WSSXMLMapping::currency((int)$p['discounted_price']);
+			$p['discount_currency'] = WSSXMLMapping::currency((int)$p['price'] - (int)$p['discounted_price']);
 		} else {
-			$p['discounted_price_currency'] = $p['price'];
+			$p['discounted_price_currency'] = $p['price_currency'];
+			$p['discount_currency'] = 0;
 		}
-		// if ($p['date_start'] > $date_now || $p['date_end'] < $date_now) {
-		// 	$p['discounted_price'] = $p['price'];
-		// } else {
-		// 	$p['discounted_price'] = WSSXMLMapping::currency((int)$p['discounted_price']);
-		// }
-		$p['discount_currency'] = WSSXMLMapping::currency((int)$p['price'] - (int)$p['discounted_price']);
 	} else {
-		$p['discounted_price_currency'] = WSSXMLMapping::currency((int)$p['price']);
+		$p['discounted_price_currency'] = $p['price_currency'];
 		$p['discount_currency'] = 0;
 	}
 
-	$p['picture_url'] = HTTP_SERVER.'image/'.$p['image'];
+	//base url
+	if (isset($_SERVER['HTTPS'])) {
+	    $protocol = ($_SERVER['HTTPS'] && $_SERVER['HTTPS'] != "off") ? "https://" : "http://";
+	} else {
+	    $protocol = 'http://';
+	}
+
+	//pictures
+	$p['picture_url'] = $protocol.$_SERVER['SERVER_NAME'].'/image/'.$p['image'];
 
 	$tmp = $db->query_first("SELECT * FROM ".DB_PREFIX."url_alias WHERE query = 'product_id=".$product_id."'");
 
+	//url
 	if (empty($tmp['keyword'])) {
-		$p['url'] = HTTP_SERVER.'index.php?route=product/product&product_id='.$p['product_id'];
+		$p['url'] = $protocol.$_SERVER['SERVER_NAME'].'/index.php?route=product/product&product_id='.$p['product_id'];
 	} else {
-		$p['url'] = HTTP_SERVER.$tmp['keyword'];
+		$p['url'] = $protocol.$_SERVER['SERVER_NAME'].'/'.$tmp['keyword'];
 	}
 
+	//mapping data
 	$data[$product_id] = array(
 		//SKU sản phẩm
 		'simple_sku' => $p['sku'],
 		//SKU sản phẩm cha nếu có
 		'parent_sku' => '',
 		//Có sẵn hàng hay không 											
-		'availability_instock' => $p['availability_instock'], 								
+		'availability_instock' => isset($p['availability_instock']) ? $p['availability_instock'] : 1, 								
 		//Brand name
 		'brand' => $p['brand_name'],
 		//Tên sản phẩm						
